@@ -13,6 +13,8 @@ void VirtualMachine::reset() {
     cmpFlag = 0;
     stack.clear();
     registers.clear();
+    heap.clear();
+    nextHeapAddress = 1; // Start at 1, 0 can be used as null
 }
 
 void VirtualMachine::loadProgram(const std::vector<Instruction>& newProgram) {
@@ -32,8 +34,6 @@ void VirtualMachine::execute() {
     
     pc = 0;
     running = true;
-    
-    std::cout << "Starting execution with " << program.size() << " instructions" << std::endl;
     
     while (running && pc < program.size()) {
         Instruction& instr = program[pc];
@@ -183,6 +183,61 @@ void VirtualMachine::execute() {
                 break;
             }
                 
+            case OpCode::ALLOC: {
+                if (stack.empty()) {
+                    std::cerr << "Error: Stack underflow on ALLOC" << std::endl;
+                    running = false;
+                    break;
+                }
+                int32_t size = stack.back(); stack.pop_back();
+                int32_t address = allocateHeapMemory(size);
+                stack.push_back(address);
+                pc++;
+                break;
+            }
+            
+            case OpCode::FREE: {
+                if (stack.empty()) {
+                    std::cerr << "Error: Stack underflow on FREE" << std::endl;
+                    running = false;
+                    break;
+                }
+                int32_t address = stack.back(); stack.pop_back();
+                freeHeapMemory(address);
+                pc++;
+                break;
+            }
+            
+            case OpCode::STORE_HEAP: {
+                if (stack.size() < 3) {
+                    std::cerr << "Error: Stack underflow on STORE_HEAP" << std::endl;
+                    running = false;
+                    break;
+                }
+                int32_t value = stack.back(); stack.pop_back();
+                int32_t offset = stack.back(); stack.pop_back();
+                int32_t address = stack.back(); stack.pop_back();
+                
+                storeHeapValue(address, offset, value);
+                pc++;
+                break;
+            }
+            
+            case OpCode::LOAD_HEAP: {
+                if (stack.size() < 2) {
+                    std::cerr << "Error: Stack underflow on LOAD_HEAP" << std::endl;
+                    running = false;
+                    break;
+                }
+                int32_t offset = stack.back(); stack.pop_back();
+                int32_t address = stack.back(); stack.pop_back();
+                
+                int32_t value = loadHeapValue(address, offset);
+                stack.push_back(value);
+                pc++;
+                break;
+            }
+                
             default:
                 std::cerr << "Error: Unknown opcode: " << static_cast<int>(static_cast<uint8_t>(instr.opcode)) << std::endl;
                 running = false;
@@ -206,6 +261,15 @@ void VirtualMachine::dumpState() const {
     for (const auto& reg : registers) {
         std::cout << "R" << reg.first << ": " << reg.second << std::endl;
     }
+    
+    std::cout << "Heap (" << heap.size() << " blocks):" << std::endl;
+    for (const auto& block : heap) {
+        std::cout << "Address " << block.first << " (size " << block.second.size() << "):" << std::endl;
+        for (size_t i = 0; i < block.second.size(); i++) {
+            std::cout << "  [" << i << "]: " << block.second[i] << std::endl;
+        }
+    }
+    
     std::cout << "================" << std::endl;
 }
 
@@ -229,7 +293,11 @@ std::vector<Instruction> VirtualMachine::assembleProgram(const std::string& code
         {"JMP", OpCode::JMP},
         {"JZ", OpCode::JZ},
         {"JNZ", OpCode::JNZ},
-        {"CMP", OpCode::CMP}
+        {"CMP", OpCode::CMP},
+        {"ALLOC", OpCode::ALLOC},
+        {"FREE", OpCode::FREE},
+        {"STORE_HEAP", OpCode::STORE_HEAP},
+        {"LOAD_HEAP", OpCode::LOAD_HEAP}
     };
     
     while (std::getline(stream, line)) {
@@ -292,4 +360,55 @@ std::vector<Instruction> VirtualMachine::assembleProgram(const std::string& code
     }
     
     return result;
+}
+
+int32_t VirtualMachine::allocateHeapMemory(int32_t size) {
+    if (size <= 0) {
+        std::cerr << "Error: Invalid heap allocation size" << std::endl;
+        return 0;
+    }
+    
+    int32_t address = nextHeapAddress++;
+    heap[address] = std::vector<int32_t>(size, 0); // Initialize with zeros
+    return address;
+}
+
+void VirtualMachine::freeHeapMemory(int32_t address) {
+    if (heap.find(address) != heap.end()) {
+        heap.erase(address);
+    } else {
+        std::cerr << "Error: Attempt to free invalid heap address: " << address << std::endl;
+    }
+}
+
+void VirtualMachine::storeHeapValue(int32_t address, int32_t offset, int32_t value) {
+    if (heap.find(address) == heap.end()) {
+        std::cerr << "Error: Invalid heap address: " << address << std::endl;
+        return;
+    }
+    
+    std::vector<int32_t>& block = heap[address];
+    if (offset < 0 || offset >= static_cast<int32_t>(block.size())) {
+        std::cerr << "Error: Heap access out of bounds: address=" << address 
+                  << ", offset=" << offset << ", size=" << block.size() << std::endl;
+        return;
+    }
+    
+    block[offset] = value;
+}
+
+int32_t VirtualMachine::loadHeapValue(int32_t address, int32_t offset) {
+    if (heap.find(address) == heap.end()) {
+        std::cerr << "Error: Invalid heap address: " << address << std::endl;
+        return 0;
+    }
+    
+    std::vector<int32_t>& block = heap[address];
+    if (offset < 0 || offset >= static_cast<int32_t>(block.size())) {
+        std::cerr << "Error: Heap access out of bounds: address=" << address 
+                  << ", offset=" << offset << ", size=" << block.size() << std::endl;
+        return 0;
+    }
+    
+    return block[offset];
 } 
