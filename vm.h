@@ -6,6 +6,10 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <functional>
+
+// Forward declaration
+class VirtualMachine;
 
 // Opcodes for our virtual machine
 enum class OpCode : uint8_t {
@@ -35,6 +39,9 @@ struct Instruction {
     int32_t operand;
 };
 
+// Instruction handler type
+using InstructionHandler = std::function<void(VirtualMachine&, const Instruction&)>;
+
 class VirtualMachine {
 private:
     std::vector<Instruction> program;
@@ -45,6 +52,12 @@ private:
     uint32_t pc;  // Program counter
     bool running;
     int32_t cmpFlag;  // Result of last comparison
+    
+    // Map of instruction handlers
+    std::unordered_map<OpCode, InstructionHandler> instructionHandlers;
+    
+    // Initialize instruction handlers
+    void initInstructionHandlers();
 
 public:
     VirtualMachine();
@@ -75,21 +88,40 @@ public:
     void freeHeapMemory(int32_t address);
     void storeHeapValue(int32_t address, int32_t offset, int32_t value);
     int32_t loadHeapValue(int32_t address, int32_t offset);
-
-    // Add to public section
-    OpCode getInstructionOpcode(size_t index) const {
-        if (index < program.size()) {
-            return program[index].opcode;
-        }
-        return OpCode::HALT;
-    }
-
-    int32_t getInstructionOperand(size_t index) const {
-        if (index < program.size()) {
-            return program[index].operand;
-        }
-        return 0;
-    }
+    
+    // Stack operations (for instruction handlers)
+    void pushStack(int32_t value);
+    int32_t popStack();
+    int32_t peekStack() const;
+    bool stackEmpty() const;
+    size_t stackSize() const;
+    
+    // Register operations
+    void storeRegister(int32_t reg, int32_t value);
+    int32_t loadRegister(int32_t reg) const;
+    
+    // Program counter operations
+    void incrementPC();
+    void jumpPC(uint32_t address);
+    uint32_t getPC() const;
+    
+    // Comparison flag operations
+    void setCmpFlag(int32_t value);
+    int32_t getCmpFlag() const;
+    
+    // Running state operations
+    void setRunning(bool state);
+    bool isRunning() const;
+    
+    // Get instruction at current PC
+    const Instruction& getCurrentInstruction() const;
+    
+    // Add a custom instruction handler
+    void addInstructionHandler(OpCode opcode, InstructionHandler handler);
+    
+    // Get instruction opcode and operand (for debugging)
+    OpCode getInstructionOpcode(size_t index) const;
+    int32_t getInstructionOperand(size_t index) const;
 };
 
 #endif // VM_H 

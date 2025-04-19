@@ -1,0 +1,89 @@
+
+===========================
+Virtual Machine Instructions
+===========================
+
+1. Data / Stack Manipulation
+   - DUP
+   - SWAP
+   - ROT
+   - ROLL
+   - DROP / DISCARD
+   - CONST <k>
+
+2. Arithmetic & Bitwise
+   - INC
+   - DEC
+   - NEG
+   - MOD
+   - AND
+   - OR
+   - XOR
+   - NOT
+   - SHL
+   - SHR
+   - SAR
+   - ABS
+   - MIN
+   - MAX
+
+3. Typed Comparisons / Conditional Branches
+   - JE   (jump if equal)
+   - JNE  (jump if not equal)
+   - JLT  (jump if less than)
+   - JLE  (jump if less or equal)
+   - JGT  (jump if greater than)
+   - JGE  (jump if greater or equal)
+
+4. Calls & Stack Frames
+   - CALL <addr>
+   - RET
+   - ENTER <n>     (create stack frame with n locals)
+   - LEAVE         (destroy current frame)
+   - LOADL <idx>   (load local variable)
+   - STOREL <idx>  (store local variable)
+
+5. Heap & Structured Data
+   - NEW <size> / NEWARRAY <len>
+   - DEL / FREE
+   - GET8  <addr> <ofs>
+   - SET8  <addr> <ofs> <val>
+   - GET16 <addr> <ofs>
+   - SET16 <addr> <ofs> <val>
+   - GET32 <addr> <ofs>
+   - SET32 <addr> <ofs> <val>
+   - LEN <addr>
+   - GETINDEX <addr> <i>
+   - SETINDEX <addr> <i> <val>
+   - GETFIELD <addr> <field_id>
+   - SETFIELD <addr> <field_id> <val>
+
+6. Floating‑Point & Numeric Conversions
+   - FADD, FSUB, FMUL, FDIV
+   - I2F, F2I
+   - FSQRT
+   - FSIN
+   - FCOS
+
+7. System / I‑O / Runtime Services
+   - PRINTS (print string)
+   - PRINTI (print integer)
+   - PRINTF (formatted print)
+   - READ    (read input line)
+   - CLOCK   (push current time)
+   - RAND    (push random int)
+   - NATIVE <index> (call host function)
+
+8. Debug / Meta
+   - NOP
+   - BREAK
+   - TRACE
+   - ASSERT
+
+9. Concurrency (Advanced)
+   - SPAWN <addr>
+   - YIELD
+   - LOCK
+   - UNLOCK
+   - WAIT
+   - NOTIFY
