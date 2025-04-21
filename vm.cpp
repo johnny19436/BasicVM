@@ -238,7 +238,8 @@ void VirtualMachine::initInstructionHandlers() {
     
     // LOAD
     instructionHandlers[OpCode::LOAD] = [](VirtualMachine& vm, const Instruction& instr) {
-        vm.pushStack(vm.loadRegister(instr.operand));
+        int32_t value = vm.loadRegister(instr.operand);
+        vm.pushStack(value);
         vm.incrementPC();
     };
     
@@ -249,6 +250,7 @@ void VirtualMachine::initInstructionHandlers() {
     
     // JZ
     instructionHandlers[OpCode::JZ] = [](VirtualMachine& vm, const Instruction& instr) {
+        // std::cout << "JZ: cmpFlag=" << vm.getCmpFlag() << ", target=" << instr.operand << std::endl;
         if (vm.getCmpFlag() == 0) {
             vm.jumpPC(instr.operand);
         } else {
@@ -274,11 +276,8 @@ void VirtualMachine::initInstructionHandlers() {
         }
         int32_t b = vm.popStack();
         int32_t a = vm.popStack();
-        
-        if (a < b) vm.setCmpFlag(-1);
-        else if (a > b) vm.setCmpFlag(1);
-        else vm.setCmpFlag(0);
-        
+        vm.setCmpFlag(a - b);
+        // std::cout << "CMP: " << a << " - " << b << " = " << vm.getCmpFlag() << std::endl;
         vm.incrementPC();
     };
     
@@ -361,95 +360,6 @@ void VirtualMachine::dumpState() const {
     }
     
     std::cout << "================" << std::endl;
-}
-
-std::vector<Instruction> VirtualMachine::assembleProgram(const std::string& code) {
-    std::vector<Instruction> result;
-    std::istringstream stream(code);
-    std::string line;
-    
-    // Simple mapping from instruction names to opcodes
-    std::unordered_map<std::string, OpCode> opcodeMap = {
-        {"HALT", OpCode::HALT},
-        {"PUSH", OpCode::PUSH},
-        {"POP", OpCode::POP},
-        {"ADD", OpCode::ADD},
-        {"SUB", OpCode::SUB},
-        {"MUL", OpCode::MUL},
-        {"DIV", OpCode::DIV},
-        {"PRINT", OpCode::PRINT},
-        {"STORE", OpCode::STORE},
-        {"LOAD", OpCode::LOAD},
-        {"JMP", OpCode::JMP},
-        {"JZ", OpCode::JZ},
-        {"JNZ", OpCode::JNZ},
-        {"CMP", OpCode::CMP},
-        {"ALLOC", OpCode::ALLOC},
-        {"FREE", OpCode::FREE},
-        {"STORE_HEAP", OpCode::STORE_HEAP},
-        {"LOAD_HEAP", OpCode::LOAD_HEAP}
-    };
-    
-    while (std::getline(stream, line)) {
-        // Skip empty lines
-        if (line.empty()) {
-            continue;
-        }
-        
-        // Trim leading whitespace
-        size_t firstNonSpace = line.find_first_not_of(" \t");
-        if (firstNonSpace == std::string::npos) {
-            continue; // Line is all whitespace
-        }
-        line = line.substr(firstNonSpace);
-        
-        // Skip comment lines
-        if (line[0] == ';' || line[0] == '#') {
-            continue;
-        }
-        
-        // Remove inline comments
-        size_t commentPos = line.find(';');
-        if (commentPos != std::string::npos) {
-            line = line.substr(0, commentPos);
-        }
-        
-        // Trim trailing whitespace
-        size_t lastNonSpace = line.find_last_not_of(" \t");
-        if (lastNonSpace != std::string::npos) {
-            line = line.substr(0, lastNonSpace + 1);
-        }
-        
-        // Skip if line is now empty after removing comments
-        if (line.empty()) {
-            continue;
-        }
-        
-        std::istringstream lineStream(line);
-        std::string opcodeName;
-        lineStream >> opcodeName;
-        
-        // Convert to uppercase for case-insensitive comparison
-        std::transform(opcodeName.begin(), opcodeName.end(), opcodeName.begin(), ::toupper);
-        
-        if (opcodeMap.find(opcodeName) == opcodeMap.end()) {
-            std::cerr << "Unknown instruction: " << opcodeName << std::endl;
-            continue;
-        }
-        
-        OpCode opcode = opcodeMap[opcodeName];
-        int32_t operand = 0;
-        
-        // Instructions that need an operand
-        if (opcode == OpCode::PUSH || opcode == OpCode::STORE || opcode == OpCode::LOAD ||
-            opcode == OpCode::JMP || opcode == OpCode::JZ || opcode == OpCode::JNZ) {
-            lineStream >> operand;
-        }
-        
-        result.push_back({opcode, operand});
-    }
-    
-    return result;
 }
 
 int32_t VirtualMachine::allocateHeapMemory(int32_t size) {

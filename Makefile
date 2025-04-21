@@ -6,13 +6,13 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic
 TARGET = vm_exec
 
 # Source files
-SRCS = main.cpp vm.cpp
+SRCS = main.cpp vm.cpp assembler.cpp compiler.cpp
 
 # Object files
 OBJS = $(SRCS:.cpp=.o)
 
 # Header files
-HEADERS = vm.h
+HEADERS = vm.h assembler.h compiler.h
 
 # Default target
 all: $(TARGET)
