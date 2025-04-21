@@ -77,9 +77,6 @@ public:
     // Debugging helper to print the current state
     void dumpState() const;
     
-    // Helper to create a program from a string of assembly-like code
-    static std::vector<Instruction> assembleProgram(const std::string& code);
-    
     // Get program size
     size_t getProgramSize() const { return program.size(); }
     

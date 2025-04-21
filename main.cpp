@@ -1,8 +1,11 @@
 #include "vm.h"
+#include "assembler.h"
+#include "compiler.h"
 #include <iostream>
 
 int main() {
     VirtualMachine vm;
+    Assembler assembler;
     
     // Example 1: Calculate 5 + 3 * 2
     std::cout << "Example 1: Calculate 5 + 3 * 2" << std::endl;
@@ -50,7 +53,7 @@ int main() {
         HALT         ; stop execution
     )";
     
-    vm.loadProgram(VirtualMachine::assembleProgram(factorialProgram));
+    vm.loadProgram(assembler.assemble(factorialProgram));
     std::cout << "Program loaded with " << vm.getProgramSize() << " instructions" << std::endl;
     vm.execute();
     
@@ -132,9 +135,47 @@ int main() {
         HALT         ; stop execution
     )";
     
-    vm.loadProgram(VirtualMachine::assembleProgram(heapProgram));
+    vm.loadProgram(assembler.assemble(heapProgram));
     std::cout << "Heap program loaded with " << vm.getProgramSize() << " instructions" << std::endl;
-
+    vm.execute();
+    
+    // Example 4: Using the compiler to run a high-level language program
+    std::cout << "\nExample 4: Using the compiler to run a high-level language program" << std::endl;
+    
+    // Create a simple program
+    std::string highLevelProgram = "let x 5; print x;";
+    
+    std::cout << "Source code:\n" << highLevelProgram << std::endl;
+    
+    Compiler compiler;
+    std::vector<Instruction> compiledProgram = compiler.compile(highLevelProgram);
+    
+    // Debug: Print the compiled instructions
+    // std::cout << "Compiled instructions:" << std::endl;
+    // for (size_t i = 0; i < compiledProgram.size(); i++) {
+    //     std::cout << i << ": opcode=" << static_cast<int>(compiledProgram[i].opcode) 
+    //               << ", operand=" << compiledProgram[i].operand << std::endl;
+    // }
+    
+    vm.loadProgram(compiledProgram);
+    std::cout << "Compiled program loaded with " << vm.getProgramSize() << " instructions" << std::endl;
+    vm.execute();
+    
+    // Now try a more complex program with a while loop
+    std::cout << "\nExample 5: Using the compiler with a while loop" << std::endl;
+    
+    std::string loopProgram ="   let    x    5;   \n"
+                             "   while   x    do  \n"
+                             "      print   x;  \n"
+                             "      let     x    x  -  1;   \n"
+                             "   end;   ";
+    
+    std::cout << "Source code:\n" << loopProgram << std::endl;
+    
+    compiledProgram = compiler.compile(loopProgram);
+    
+    vm.loadProgram(compiledProgram);
+    std::cout << "Compiled program loaded with " << vm.getProgramSize() << " instructions" << std::endl;
     vm.execute();
     
     return 0;
